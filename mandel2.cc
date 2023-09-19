@@ -1,8 +1,8 @@
 #include <cstdio>
 #include <cmath>
 
-static const int WIDTH = 512;
-static const int HEIGHT = 512;
+static const int WIDTH = 4096;
+static const int HEIGHT = 4096;
 static const float X_MIN = -1.5 - 0.7;
 static const float X_MAX = 1.5 - 0.7;
 static const float Y_MIN = -1.5;
@@ -31,7 +31,8 @@ void mandelbrot(float *output) {
 			}
 
 			if (sqrtf(z_x*z_x + z_y*z_y) < 2)
-				output[y_pixel*WIDTH+x_pixel] = 0.;
+				//output[y_pixel*WIDTH+x_pixel] = 0.;
+				output[y_pixel*WIDTH+x_pixel] = sqrtf(z_x*z_x+z_y*z_y) / 2;
 			else
 				output[y_pixel*WIDTH+x_pixel] = 1.;
 		}
