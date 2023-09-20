@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstdint>
 #include <cmath>
 #include <omp.h>
 
@@ -9,9 +10,12 @@ static const float X_MAX = 1.5 - 0.7;
 static const float Y_MIN = -1.5;
 static const float Y_MAX = 1.5;
 static const int ITERS = 1024;
-static const int PAD = 4;
 
-void mandelbrot(float *output) {
+struct pixel_rgba {
+	float r, g, b, a;
+};
+
+void mandelbrot(pixel_rgba *out_image) {
 	float x_step = (X_MAX - X_MIN) / (float)WIDTH;
 	float y_step = (Y_MAX - Y_MIN) / (float)HEIGHT;
 
@@ -45,18 +49,25 @@ void mandelbrot(float *output) {
 						break;
 				}
 
+				float output;
 				if (sqrtf(z_x*z_x + z_y*z_y) < 2)
-					//output[y_pixel*WIDTH+x_pixel] = 0.;
-					output[PAD*(y_pixel*WIDTH+x_pixel)] = sqrtf(z_x*z_x+z_y*z_y) / 2;
+					output = sqrtf(z_x*z_x+z_y*z_y) / 2;
 				else
-					output[PAD*(y_pixel*WIDTH+x_pixel)] = 1.;
+					output = 1.;
+
+				pixel_rgba pixel;
+				pixel.r = 180./255. * output;
+				pixel.g = 1. * (1 - output);
+				pixel.b = 1. * (1 - output);
+
+				out_image[y_pixel*WIDTH + x_pixel] = pixel;
 			}
 		}
 	}
 }
 
 int main(void) {
-	float *data = new float[WIDTH * HEIGHT * PAD];
+	pixel_rgba *image = new pixel_rgba[WIDTH * HEIGHT];
 
 /*#pragma omp parallel num_threads(16)
 	{
@@ -64,7 +75,7 @@ int main(void) {
 		fprintf(stderr, "hello world (%d)\n", ID);
 	} */
 
-	mandelbrot(data);
+	mandelbrot(image);
 
 	fprintf(stderr, "mandelbrot complete\n");
 
@@ -73,17 +84,12 @@ int main(void) {
 	printf("%d %d\n", WIDTH, HEIGHT);
 	printf("255\n");
 
-	unsigned char row_buffer[WIDTH * 3];
+	uint8_t row_buffer[WIDTH * 3];
 	for (int row = 0; row < HEIGHT; row++) {
 		for (int col = 0; col < WIDTH; col++) {
-			unsigned char r = 180 * data[PAD*(row*WIDTH+col)];
-			unsigned char g = 255 * (1 - data[PAD*(row*WIDTH+col)]);
-			unsigned char b = 255 * (1 - data[PAD*(row*WIDTH+col)]);
-			/*unsigned char buffer[3] = {r, g, b};
-			fwrite(buffer, 1, 3, stdout);*/
-			row_buffer[col * 3 + 0] = r;
-			row_buffer[col * 3 + 1] = g;
-			row_buffer[col * 3 + 2] = b;
+			row_buffer[col * 3 + 0] = 255 * image[row*WIDTH + col].r;
+			row_buffer[col * 3 + 1] = 255 * image[row*WIDTH + col].g;
+			row_buffer[col * 3 + 2] = 255 * image[row*WIDTH + col].b;
 		}
 		fwrite(row_buffer, WIDTH, 3, stdout);
 	}
